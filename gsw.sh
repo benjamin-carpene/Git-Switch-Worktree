@@ -40,7 +40,7 @@ if [ -z "$target_branch" ]; then
 	exit 1
 fi
 
-if git show-ref --verify --quiet "refs/heads/$target_branch"; then
+if ! git show-ref --verify --quiet "refs/heads/$target_branch"; then
 	echo "The branch $target_branch doesnt exist." >&2
 	exit 1
 fi
@@ -54,7 +54,8 @@ dir=$(git worktree list | awk -v branch="[$target_branch]" '$3==branch {print $1
 
 if [ -n "$dir" ]; then
 	echo "Switching to worktree $target_branch" >&2
-	cd "$dir" || exit 1
+	cd "$dir" || exit 1 # CD into the worktree
+	exec $SHELL # Update calling shell so that CD worked 
 else
 	git switch "$target_branch" || exit 1
 fi
