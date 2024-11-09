@@ -1,10 +1,12 @@
 #!/bin/bash
 
-OLD_BRANCH_FILE="$HOME/.local/gs/old_branch.txt"
-
+# Enter its not a worktree or a base repo and exits
 if ! git rev-parse --is-inside-work-tree > /dev/null; then
 	exit 1
 fi
+
+DOT_GIT_MAIN_FOLDER=$(realpath $(git rev-parse --git-common-dir 2>/dev/null))
+OLD_BRANCH_FILE="$DOT_GIT_MAIN_FOLDER/gsw-old-branch.txt"
 
 # Keep the current origin branch in memory
 current_branch=$(git rev-parse --abbrev-ref HEAD)
@@ -58,5 +60,4 @@ else
 fi
 
 # Update OLD_BRANCH_FILE
-mkdir -p "$(dirname "$OLD_BRANCH_FILE")"
 echo "$current_branch" > "$OLD_BRANCH_FILE"
