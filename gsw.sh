@@ -30,7 +30,7 @@ function gsw() {
     if [ "$target_branch" = "-" ]; then
         target_branch=$(cat "$OLD_BRANCH_FILE" 2>/dev/null)
     elif [ "$target_branch" = "--" ]; then # Use the regular last branch (worktree specific)
-        target_branch=$(git rev-parse --abbrev-ref @{-1})
+        target_branch=$(git rev-parse --abbrev-ref @{-1} 2>/dev/null) || target_branch=''
     fi
 
     # Sanitization
