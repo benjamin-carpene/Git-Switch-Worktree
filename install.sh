@@ -13,7 +13,7 @@ if [ -n $HOME ]; then
 
     # Ceck source in bashrc / zshrc
     source_cmd="source $local_install_dir/gsw.sh"
-    
+
     # Handles for bashrc
     if which bash &>/dev/null && ! grep -Fq "$source_cmd" "$HOME/.bashrc"; then
         echo "You might want to source the gsw script in your bashrc for accessing gsw"
