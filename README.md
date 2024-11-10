@@ -11,6 +11,8 @@ It enables the user to navigate in worktrees using `gsw` in the same way as they
 - Has a 'last worktree' feature (`gsw -`) for switching to the last worktree
     - Works on a **PER REPOSITORY** basis, to not mix oranges and apples
     - You can still use `gsw --` if you want to use the default `git switch -` option
+- Is a lightweight bash function, that can be simply copy-pasted or sourced in your rc file
+- Works on bash and zsh
 
 
 # Synopsis
@@ -24,10 +26,10 @@ It enables the user to navigate in worktrees using `gsw` in the same way as they
 # Dependencies
 - `git` (obviously)
 - `fzf` for the TUI
+- A `bash` or/and `zsh` interpreter
 - That's all 😀
 
 # Installation
 
-Run the `./install.sh` script on this repo, which installs the script in `~/.local/bin`.
-- It will ask you if you want to create an alias, if (*like me*) you already had a `gsw` alias for git switch.
-- It will also recommend you to update your `PATH` variable if necessary.
+Run the `./install.sh` script on this repo, which installs the script in `~/.local/share`.
+*Nota : It comes with its own alias named after himself, if **like me** you already had a `gsw` alias for git switch.*
