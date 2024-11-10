@@ -4,26 +4,29 @@ if [ -n $HOME ]; then
     type gsw &>/dev/null && set_alias_msg='true' # if something with that name already exist
 
     # Installs the script
-    local_install_dir="$HOME/.local/gsw"
+    local_install_dir="$HOME/.local/share"
     mkdir -p "$local_install_dir"
     cp gsw.sh "$local_install_dir/gsw.sh"
 
-    local_bin_dir="$HOME/.local/bin"
-    mkdir -p "$local_bin_dir"
-    ln -sf "$local_install_dir/gsw.sh" "$local_bin_dir/gsw"
+    echo "gsw has been installed in $local_install_dir"
+    echo
 
-    echo "gsw has been installed in $local_install_dir with a symlink in $local_bin_dir"
-
-    if [[ "$PATH" != *"$local_bin_dir"* ]]; then
-        echo "You may not have $local_bin_dir in your PATH variable, which is necessary for gsw."
-        echo "Type \`echo 'PATH=\$PATH:$local_bin_dir' >> $HOME/.bashrc\` in order to add it to your path."
+    # Ceck source in bashrc / zshrc
+    source_cmd="source $local_install_dir/gsw.sh"
+    
+    # Handles for bashrc
+    if which bash &>/dev/null && ! grep -Fq "$source_cmd" "$HOME/.bashrc"; then
+        echo "You might want to source the gsw script in your bashrc for accessing gsw"
+        echo "Type \`echo '$source_cmd' >> $HOME/.bashrc\` or add it by yourself"
+        echo
     fi
 
-    if [ "$set_alias_msg" == 'true' ]; then
-        echo "You may want to set an alias for gsw, as you already have a command named gsw."
-        echo "Type \`echo 'alias gsw=$local_bin_dir/gsw' >> $HOME/.bashrc\` to add it as an alias."
+    # Handles for zshrc
+    if which zsh &>/dev/null && ! grep -Fq "$source_cmd" "$HOME/.zshrc"; then
+        echo "You might want to source the gsw script in your zshrc for accessing gsw"
+        echo "Type \`echo '$source_cmd' >> $HOME/.zshrc\` or add it by yourself"
+        echo
     fi
-
 else
     echo "User has no HOME folder"
     exit 1
