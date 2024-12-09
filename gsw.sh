@@ -1,4 +1,4 @@
-DEBUG=true
+DEBUG=false
 function _gsw_log_dbg() {
     if [ "$DEBUG" = "true" ]; then
         echo "DBG: $@" >&2
