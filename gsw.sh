@@ -53,14 +53,47 @@ function gsw() {
 
     if [ -n "$dir" ]; then
         echo "Switching to worktree $target_branch" >&2
-        cd "$dir" || return 1 # CD into the worktree
+        cd "$dir" || return 1
     else
-        git switch "$target_branch" || return 1
+        local root_dir
+        root_dir=$(dirname "$DOT_GIT_MAIN_FOLDER")
+        local worktree_path="$root_dir/$target_branch"
+        echo "Creating worktree for $target_branch" >&2
+        git worktree add "$worktree_path" "$target_branch" || return 1
+        cd "$worktree_path" || return 1
     fi
 
     # Update OLD_BRANCH_FILE
     echo "$current_branch" > "$OLD_BRANCH_FILE"
 }
 
+# Clone for a bare repo with arguments URI (and name on disk if user wants a specific one)
+gcw() {
+  local url=$1
+  local name=${2:-$(basename "$url" .git)}
+  if [ -z "$url" ]; then
+    echo 'Need at least one argument (url)'
+    return 1
+  fi
+  if [ -z "$name" ]; then
+    echo 'No name could be calculated from URL nor was given'
+    return 2
+  fi
+
+  # Log for user
+  echo "Cloning $url in $name"
+
+  mkdir "$name" && cd "$name" || return 3
+
+  # Clone and do the plumbing
+  git clone --bare "$url" .bare
+  echo "gitdir: ./.bare" > .git
+  git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+  git fetch origin
+
+  return 0
+}
+
 # For people who already had an alias :)
 alias gsw=gsw
+alias gcw=gcw
