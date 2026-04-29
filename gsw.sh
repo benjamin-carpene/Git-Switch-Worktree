@@ -112,8 +112,9 @@ function gsw() {
         return 1
     fi
 
+    local DOT_GIT_MAIN_FOLDER
     DOT_GIT_MAIN_FOLDER=$(realpath $(git rev-parse --git-common-dir 2>/dev/null))
-    OLD_BRANCH_FILE="$DOT_GIT_MAIN_FOLDER/gsw-old-branch.txt"
+    local OLD_BRANCH_FILE="$DOT_GIT_MAIN_FOLDER/gsw-old-branch.txt"
 
     local mode='switch'
     if [ "$1" = "-c" ]; then
