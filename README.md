@@ -31,5 +31,20 @@ It enables the user to navigate in worktrees using `gsw` in the same way as they
 
 # Installation
 
-Run the `./install.sh` script on this repo, which installs the script in `~/.local/share`.
+## Quick install (remote)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/benjamin-carpene/Git-Switch-Worktree/main/install.sh | bash
+```
+
+This clones the repository into `~/.local/gsw.app` and installs the script in `~/.local/share`.
+
+## Local install
+
+If you already have the repository cloned, run:
+
+```bash
+./install-local.sh
+```
+
 *Nota : It comes with its own alias named after himself, if **like me** you already had a `gsw` alias for git switch.*
