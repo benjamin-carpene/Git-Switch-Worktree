@@ -1,26 +1,40 @@
-function gsw() {
-    # Enter its not a worktree or a base repo and exits
-    if ! git rev-parse --is-inside-work-tree > /dev/null; then
-        return 1
-    fi
-
-    DOT_GIT_MAIN_FOLDER=$(realpath $(git rev-parse --git-common-dir 2>/dev/null))
-    OLD_BRANCH_FILE="$DOT_GIT_MAIN_FOLDER/gsw-old-branch.txt"
-
-    # Keep the current origin branch in memory
+_gsw_switch() {
+    local target_branch="$1"
+    local current_branch
     current_branch=$(git rev-parse --abbrev-ref HEAD)
 
-    select_mode='False'
-    if [[ $# -eq 0 ]]; then
-        select_mode='True'
+    if [ "$target_branch" = "$current_branch" ]; then
+        return 0
     fi
 
-    # Selected branch
-    target_branch=""
-    if [ "$select_mode" = 'True' ]; then
-        selection=$(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null) # Git branches
-        selection="$selection"$'\n'"-" # -
-        selection="$selection"$'\n'"--" # --
+    local dir
+    dir=$(git worktree list | awk -v branch="[$target_branch]" '$3==branch {print $1; exit 0}')
+
+    if [ -n "$dir" ]; then
+        # Worktree already exist : cd into it
+        echo "Switching to worktree $target_branch" >&2
+        cd "$dir" || return 1
+    else
+        # Create the worktree (but branch currently already exist)
+        local root_dir
+        root_dir=$(dirname "$DOT_GIT_MAIN_FOLDER")
+        local worktree_path="$root_dir/$target_branch"
+        echo "Creating worktree for $target_branch" >&2
+        git worktree add "$worktree_path" "$target_branch" || return 1
+        cd "$worktree_path" || return 1
+    fi
+
+    echo "$current_branch" > "$OLD_BRANCH_FILE"
+}
+
+_gsw_resolve_branch() {
+    local target_branch=""
+
+    if [[ $# -eq 0 ]]; then
+        local selection
+        selection=$(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null)
+        selection="$selection"$'\n'"-"
+        selection="$selection"$'\n'"--"
         target_branch=$(echo "$selection" | fzf)
     else
         target_branch="$1"
@@ -29,11 +43,10 @@ function gsw() {
     # Special cases (git switch -)
     if [ "$target_branch" = "-" ]; then
         target_branch=$(cat "$OLD_BRANCH_FILE" 2>/dev/null)
-    elif [ "$target_branch" = "--" ]; then # Use the regular last branch (worktree specific)
+    elif [ "$target_branch" = "--" ]; then
         target_branch=$(git rev-parse --abbrev-ref @{-1} 2>/dev/null) || target_branch=''
     fi
 
-    # Sanitization
     if [ -z "$target_branch" ]; then
         echo "No branch were given." >&2
         return 1
@@ -44,27 +57,82 @@ function gsw() {
         return 1
     fi
 
-    if [ "$target_branch" = "$current_branch" ]; then
-        return 0 # Nothing to do
+    echo "$target_branch"
+}
+
+_gsw_create() {
+    local new_branch="$1"
+    if [ -z "$new_branch" ]; then
+        echo "No branch name given." >&2
+        return 1
     fi
 
-    # Get the folder
-    dir=$(git worktree list | awk -v branch="[$target_branch]" '$3==branch {print $1; exit 0}')
-
-    if [ -n "$dir" ]; then
-        echo "Switching to worktree $target_branch" >&2
-        cd "$dir" || return 1
-    else
-        local root_dir
-        root_dir=$(dirname "$DOT_GIT_MAIN_FOLDER")
-        local worktree_path="$root_dir/$target_branch"
-        echo "Creating worktree for $target_branch" >&2
-        git worktree add "$worktree_path" "$target_branch" || return 1
-        cd "$worktree_path" || return 1
+    if git show-ref --verify --quiet "refs/heads/$new_branch"; then
+        echo "The branch $new_branch already exists." >&2
+        return 1
     fi
 
-    # Update OLD_BRANCH_FILE
-    echo "$current_branch" > "$OLD_BRANCH_FILE"
+    local root_dir
+    root_dir=$(dirname "$DOT_GIT_MAIN_FOLDER")
+    local worktree_path="$root_dir/$new_branch"
+    echo "Creating branch and worktree for $new_branch" >&2
+    git worktree add -b "$new_branch" "$worktree_path" || return 1
+
+    _gsw_switch "$new_branch"
+}
+
+_gsw_delete() {
+    local del_branch="$1"
+    if [ -z "$del_branch" ]; then
+        echo "No branch name given." >&2
+        return 1
+    fi
+
+    local current_branch
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    local dir
+    dir=$(git worktree list | awk -v branch="[$del_branch]" '$3==branch {print $1; exit 0}')
+    if [ -z "$dir" ]; then
+        echo "No worktree found for branch $del_branch." >&2
+        return 1
+    fi
+
+    if [ "$del_branch" = "$current_branch" ]; then
+        echo "Cannot delete the worktree you are currently in." >&2
+        return 1
+    fi
+
+    echo "Removing worktree for $del_branch" >&2
+    git worktree remove "$dir" || return 1
+}
+
+function gsw() {
+    if ! git rev-parse --is-inside-work-tree > /dev/null; then
+        return 1
+    fi
+
+    DOT_GIT_MAIN_FOLDER=$(realpath $(git rev-parse --git-common-dir 2>/dev/null))
+    OLD_BRANCH_FILE="$DOT_GIT_MAIN_FOLDER/gsw-old-branch.txt"
+
+    local mode='switch'
+    if [ "$1" = "-c" ]; then
+        mode='create'
+        shift
+    elif [ "$1" = "-d" ]; then
+        mode='delete'
+        shift
+    fi
+
+    case "$mode" in
+        create) _gsw_create "$1" ;;
+        delete) _gsw_delete "$1" ;;
+        switch)
+            local target_branch
+            target_branch=$(_gsw_resolve_branch "$@") || return 1
+            _gsw_switch "$target_branch"
+            ;;
+    esac
 }
 
 # Clone for a bare repo with arguments URI (and name on disk if user wants a specific one)
